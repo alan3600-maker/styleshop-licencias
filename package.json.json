@@ -1,0 +1,14 @@
+{
+  "name": "styleshop-licencias",
+  "version": "1.0.0",
+  "description": "Servidor de licencias StyleShop PY",
+  "main": "superadmin-server.cjs",
+  "scripts": {
+    "start": "node superadmin-server.cjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}
