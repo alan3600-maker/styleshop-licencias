@@ -13,10 +13,18 @@ app.use(express.json());
 function generarKey(negocio, plan, fechaVencimiento) {
   const planCode = plan === "mensual" ? "M" : plan === "anual" ? "A" : "E";
   const fechaCode = fechaVencimiento.replace(/-/g, "");
-  const negocioCode = Buffer.from(negocio).toString("base64").replace(/[^A-Z0-9]/gi, "").slice(0, 6).toUpperCase();
+  // Codificar nombre completo en base64 sin padding
+  const negocioB64 = Buffer.from(negocio).toString("base64").replace(/=/g, "").replace(/\+/g, "x").replace(/\//g, "y");
   const data = `${negocio}|${planCode}|${fechaCode}`;
   const firma = crypto.createHmac("sha256", SECRET).update(data).digest("hex").slice(0, 8).toUpperCase();
-  return `SS-${planCode}${fechaCode}-${negocioCode}-${firma}`;
+  return `SS-${planCode}${fechaCode}-${negocioB64}-${firma}`;
+}
+
+function decodificarNegocio(negocioB64) {
+  try {
+    const b64 = negocioB64.replace(/x/g, "+").replace(/y/g, "/");
+    return Buffer.from(b64, "base64").toString("utf8");
+  } catch { return ""; }
 }
 
 // ── VERIFICACIÓN DE KEY ──────────────────────────────────────
@@ -43,6 +51,7 @@ function verificarKey(key) {
 
     return {
       valida: true,
+      negocio: decodificarNegocio(negocioCode),
       plan,
       fechaVencimiento,
       diasRestantes,
@@ -56,9 +65,10 @@ function verificarKey(key) {
 
 // Verificar key (llamado por StyleShop)
 app.post("/api/licencias/verificar", (req, res) => {
-  const { key } = req.body;
+  const { key, negocio } = req.body;
   if (!key) return res.status(400).json({ valida: false, error: "Key requerida" });
   const resultado = verificarKey(key);
+  if (resultado.valida && negocio) resultado.negocio = negocio;
   res.json(resultado);
 });
 
