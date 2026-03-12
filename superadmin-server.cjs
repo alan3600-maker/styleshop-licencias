@@ -30,7 +30,7 @@ function verificarKey(key) {
 }
 
 const app = express();
-const PORT = 3002; // puerto separado al de la tienda
+const PORT = process.env.PORT || 3002;
 app.use(cors());
 app.use(express.json());
 
