@@ -13,17 +13,15 @@ app.use(express.json());
 function generarKey(negocio, plan, fechaVencimiento) {
   const planCode = plan === "mensual" ? "M" : plan === "anual" ? "A" : "E";
   const fechaCode = fechaVencimiento.replace(/-/g, "");
-  // Codificar nombre completo en base64 sin padding
-  const negocioB64 = Buffer.from(negocio).toString("base64").replace(/=/g, "").replace(/\+/g, "x").replace(/\//g, "y");
+  const negocioHex = Buffer.from(negocio, "utf8").toString("hex").toUpperCase();
   const data = `${negocio}|${planCode}|${fechaCode}`;
   const firma = crypto.createHmac("sha256", SECRET).update(data).digest("hex").slice(0, 8).toUpperCase();
-  return `SS-${planCode}${fechaCode}-${negocioB64}-${firma}`;
+  return `SS-${planCode}${fechaCode}-${negocioHex}-${firma}`;
 }
 
-function decodificarNegocio(negocioB64) {
+function decodificarNegocio(hexStr) {
   try {
-    const b64 = negocioB64.replace(/x/g, "+").replace(/y/g, "/");
-    return Buffer.from(b64, "base64").toString("utf8");
+    return Buffer.from(hexStr, "hex").toString("utf8");
   } catch { return ""; }
 }
 
@@ -43,7 +41,7 @@ function verificarKey(key) {
 
     if (fechaCode.length !== 8) return { valida: false, error: "Fecha inválida" };
 
-    const fechaVencimiento = `${fechaCode.slice(0,4)}-${fechaCode.slice(4,6)}-${fechaCode.slice(6,8)}`;
+    const fechaVencimiento = `${fechaCode.slice(0, 4)}-${fechaCode.slice(4, 6)}-${fechaCode.slice(6, 8)}`;
     const plan = planCode === "M" ? "mensual" : planCode === "A" ? "anual" : "enterprise";
 
     const hoy = new Date().toISOString().split("T")[0];
